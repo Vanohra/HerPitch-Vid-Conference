@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require('express'); 
 const http = require('http');
 const socketIo = require('socket.io');
 const { ExpressPeerServer } = require('peer');
@@ -7,7 +7,7 @@ const { v4: uuidV4 } = require('uuid');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
-  transports: ['websocket', 'polling'], // Force WebSocket and fallback to polling if necessary
+  transports: ['websocket', 'polling'], // Use WebSocket with polling as a fallback
 });
 
 const peerServer = ExpressPeerServer(server, {
@@ -34,7 +34,7 @@ io.on('connection', (socket) => {
 
   socket.on('join-room', (roomId, userId) => {
     socket.join(roomId);
-    socket.to(roomId).broadcast.emit('user-connected', userId);
+    socket.to(roomId).emit('user-connected', userId);
 
     // Message handling within room
     socket.on('message', (message) => {
@@ -44,13 +44,13 @@ io.on('connection', (socket) => {
     // Handle user disconnection
     socket.on('disconnect', () => {
       console.log(`User disconnected: ${socket.id}`);
-      socket.to(roomId).broadcast.emit('user-disconnected', userId);
+      socket.to(roomId).emit('user-disconnected', userId);
     });
   });
 });
 
 // Dynamic Port Configuration for Heroku
-const PORT = process.env.PORT || 3000; // 3000 for local testing
+const PORT = process.env.PORT || 3000; // Default to 3000 for local testing
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
