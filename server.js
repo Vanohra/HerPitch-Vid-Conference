@@ -1,45 +1,56 @@
-const express = require('express')
-const app = express()
-// const cors = require('cors')
-// app.use(cors())
-const server = require('http').Server(app)
-const io = require('socket.io')(server)
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
 const { ExpressPeerServer } = require('peer');
+const { v4: uuidV4 } = require('uuid');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  transports: ['websocket', 'polling'], // Force WebSocket and fallback to polling if necessary
+});
+
 const peerServer = ExpressPeerServer(server, {
   debug: true
 });
-const { v4: uuidV4 } = require('uuid')
 
+// Middleware and static file serving
 app.use('/peerjs', peerServer);
+app.set('view engine', 'ejs');
+app.use(express.static('public'));
 
-app.set('view engine', 'ejs')
-app.use(express.static('public'))
-
+// Routes
 app.get('/', (req, res) => {
-  res.redirect(`/${uuidV4()}`)
-})
+  res.redirect(`/${uuidV4()}`);
+});
 
 app.get('/:room', (req, res) => {
-  res.render('room', { roomId: req.params.room })
-})
+  res.render('room', { roomId: req.params.room });
+});
 
-io.on('connection', socket => {
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log(`New connection: ${socket.id}`);
+
   socket.on('join-room', (roomId, userId) => {
-    socket.join(roomId)
+    socket.join(roomId);
     socket.to(roomId).broadcast.emit('user-connected', userId);
-    // messages
+
+    // Message handling within room
     socket.on('message', (message) => {
-      //send message to the same room
-      io.to(roomId).emit('createMessage', message)
-  }); 
+      io.to(roomId).emit('createMessage', message);
+    });
 
+    // Handle user disconnection
     socket.on('disconnect', () => {
-      socket.to(roomId).broadcast.emit('user-disconnected', userId)
-    })
-  })
-})
+      console.log(`User disconnected: ${socket.id}`);
+      socket.to(roomId).broadcast.emit('user-disconnected', userId);
+    });
+  });
+});
 
-const PORT = process.env.PORT || 3000; // 3000 is for local testing
+// Dynamic Port Configuration for Heroku
+const PORT = process.env.PORT || 3000; // 3000 for local testing
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
