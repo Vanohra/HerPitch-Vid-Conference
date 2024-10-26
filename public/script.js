@@ -8,32 +8,35 @@ const myPeer = new Peer(undefined, {
 
 let myVideoStream;
 const myVideo = document.createElement('video');
-myVideo.muted = true; // Mute own video to avoid echo
+myVideo.muted = true;
 const peers = {};
 
-// Access the user's video and audio
+// Get access to video and audio
 navigator.mediaDevices.getUserMedia({
   video: true,
   audio: true
 }).then(stream => {
   myVideoStream = stream;
-  addVideoStream(myVideo, stream); // Display your own video
+  addVideoStream(myVideo, stream);
 
-  // Answer incoming calls and add their video
+  // Answer calls from other users
   myPeer.on('call', call => {
-    call.answer(stream);
+    call.answer(stream); // Answer the call with your stream
     const video = document.createElement('video');
     call.on('stream', userVideoStream => {
-      addVideoStream(video, userVideoStream);
+      addVideoStream(video, userVideoStream); // Display the caller's video stream
+    });
+    call.on('close', () => {
+      video.remove(); // Remove the video when call ends
     });
   });
 
-  // When a new user connects, call them and add their video
+  // When a new user connects
   socket.on('user-connected', userId => {
-    connectToNewUser(userId, stream);
+    connectToNewUser(userId, stream); // Call the new user and share your stream
   });
 
-  // Chat message handling
+  // Chat functionality
   let text = $("input");
   $('html').keydown(function (e) {
     if (e.which == 13 && text.val().length !== 0) {
@@ -48,31 +51,31 @@ navigator.mediaDevices.getUserMedia({
   });
 });
 
-// When a user disconnects, close their video stream
+// Handle user disconnection
 socket.on('user-disconnected', userId => {
   if (peers[userId]) peers[userId].close();
 });
 
-// When connected to the peer server, emit join-room event
+// When connected to the peer server, join the room
 myPeer.on('open', id => {
   socket.emit('join-room', ROOM_ID, id);
 });
 
-// Connect to a new user
+// Function to connect to a new user and add their video stream
 function connectToNewUser(userId, stream) {
-  const call = myPeer.call(userId, stream);
+  const call = myPeer.call(userId, stream); // Call the new user
   const video = document.createElement('video');
   call.on('stream', userVideoStream => {
-    addVideoStream(video, userVideoStream);
+    addVideoStream(video, userVideoStream); // Display the new user's video stream
   });
   call.on('close', () => {
-    video.remove();
+    video.remove(); // Remove the video when call ends
   });
 
-  peers[userId] = call; // Store the call for disconnection handling
+  peers[userId] = call; // Save the call in peers object
 }
 
-// Add video stream to the video grid
+// Function to add video stream to the DOM
 function addVideoStream(video, stream) {
   video.srcObject = stream;
   video.addEventListener('loadedmetadata', () => {
@@ -81,13 +84,13 @@ function addVideoStream(video, stream) {
   videoGrid.append(video);
 }
 
-// Chat auto-scroll
+// Chat scroll
 const scrollToBottom = () => {
   const d = $('.main__chat_window');
   d.scrollTop(d.prop("scrollHeight"));
 };
 
-// Mute/Unmute functionality
+// Mute/Unmute function
 const muteUnmute = () => {
   const enabled = myVideoStream.getAudioTracks()[0].enabled;
   if (enabled) {
@@ -99,7 +102,7 @@ const muteUnmute = () => {
   }
 };
 
-// Play/Stop video functionality
+// Play/Stop Video function
 const playStop = () => {
   let enabled = myVideoStream.getVideoTracks()[0].enabled;
   if (enabled) {
@@ -111,7 +114,7 @@ const playStop = () => {
   }
 };
 
-// UI updates for Mute/Unmute and Play/Stop Video
+// UI updates for mute/unmute and play/stop
 const setMuteButton = () => {
   const html = `
     <i class="fas fa-microphone"></i>

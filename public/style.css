@@ -102,3 +102,22 @@
     color: #CC3B33;
 }
 
+
+
+
+#video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Adjust column size as needed */
+    gap: 10px;
+    justify-content: center;
+    padding: 10px;
+  }
+  
+  video {
+    width: 100%;
+    height: auto;
+    background-color: black;
+    border-radius: 5px;
+    object-fit: cover;
+  }
+  
